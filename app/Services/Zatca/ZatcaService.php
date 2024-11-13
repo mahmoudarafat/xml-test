@@ -3,12 +3,8 @@
 namespace App\Services\Zatca;
 
 use App\Models\OrganizationSetting;
-use App\Models\BillSettings;
-use App\Models\SafesTransactions;
 use App\Models\ZatcaSetting;
-use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\Str;
-use Ramsey\Uuid\Uuid;
+use App\Models\BillSettings;
 use Carbon\Carbon;
 
 
@@ -40,8 +36,13 @@ class ZatcaService
             'business_category' => $zatcaSetting->business_category,
             'common_name' => $zatcaSetting->common_name,
             'organization_unit_name' => $zatcaSetting->organization_unit_name,
-            'organization_name' => $mainSetting->name,
-            'country_name' => $mainSetting->country_name,
+            
+            // 'organization_name' => $mainSetting->name,
+            // 'country_name' => $mainSetting->country_name,
+            
+            'organization_name' => "albadr" . rand(),
+            'country_name' => "SA",
+
             'registered_address' => $zatcaSetting->registered_address,
             'otp' => $zatcaSetting->otp,
             'email_address' => $mainSetting->email,
@@ -58,71 +59,77 @@ class ZatcaService
             'production_secret' => $zatcaSetting->production_secret,
             'production_csid' => $zatcaSetting->production_csid
         ];
-//dd($setting_obj);
+
         return $setting_obj;
     }
 
-    public function invoiceData($invoice)
+    public function  invoiceData($invoice)
     {
 
+        // $taxes = [];
+/*
+        foreach ($invoice->taxesTransaction as $taxTransaction) {
+            array_push($taxes, [
+                'percentage' => $taxTransaction->amount == 0 ? 0: $taxTransaction->tax_value,
+                'category'   => $taxTransaction->amount == 0 ? 'E': 'S',
+                'type'       => '',
+                'reason'     => '',
+
+            ]);
+
+        }
+ */
 
         $taxes = [];
         $items = [];
 
 
+
         foreach ($invoice->salesDetail as $key => $item) {
-// dd(number_format($item->vat_value,0));
-            $taxes = [];
-            array_push($taxes, [
-                'percentage' => $item->vat_mony == 0 ? 0 : number_format($item->vat_value,0),
-                'category' => $item->vat_mony == 0 ? 'E' : 'S',
-                'type' => '',
-                'reason' =>  '',
+            // dd(number_format($item->vat_value,0));
+            
+                        $taxes = [];
+                        array_push($taxes, [
+                            'percentage' => $item->vat_mony == 0 ? 0 : number_format($item->vat_value,0),
+                            'category' => $item->vat_mony == 0 ? 'E' : 'S',
+                            'type' => '',
+                            'reason' =>  '',
 
-            ]);
-            array_push($items,
-                [
-                    'id'         => $key +1,
-                    'qty'        => $item->quantity,
-                    'sell_price' => $item->price,
-                    'name'       => $item->item_name,
-                    'taxes'      =>
-                        $taxes
-                    ,
-                    'discounts' => [
+                        ]);
+                        array_push($items,
+                            [
+                                'id'         => $key +1,
+                                'qty'        => $item->quantity,
+                                'sell_price' => $item->price,
+                                'name'       => $item->item_name,
+                                'taxes'      =>
+                                    $taxes
+                                ,
+                                'discounts' => [
 
-                        [
-                            'amount' => $item->discount_money ?? 0,
-                            'reason' => '',
-                        ]
+                                    [
+                                        'amount' => $item->discount_money ?? 0,
+                                        'reason' => '',
+                                    ]
 
-                    ]
-                ]
+                                ]
+                            ]
 
-            );
+                        );
 
-        }
+                    }
 
-
-
-        $uuid = (string) Uuid::uuid4();
-        // $invoice->invoice_type = 'sales';
-        // dd( $invoice->date_process);
 
         $invoice_obj
             = [
-                // 'invoice_counter' => 1,
-                // 'invoice_number' => 1,
-                "invoice_counter" => 384,
-                "invoice_number" => null,
+            'invoice_counter' => $invoice->id,
+            'invoice_number' => $invoice->invoice_number,
+            'uuid' => $invoice->uuid, // alter table sale_process add uuid varchar(36) null;
 
-                'uuid' => '9c4a57d4-1a02-473f-b1cf-f75556f5d490',
-                'document_type' =>  'simplified',
+            'document_type' =>  'simplified',
             // simplified or standard
-          
-            'invoice_type' => 381,
-              /*   'invoice_type' => in_array($invoice->invoice_type,
-                ['sales']) ? 388 : ((in_array($invoice->invoice_type, ['back', 'back_payment'])) ? 383 : 381), */
+            'invoice_type' => in_array($invoice->invoice_type,
+                ['payment', 'rent']) ? 388 : ((in_array($invoice->invoice_type, [ 'back','back_payment'])) ? 383 : 381),
             //  "388" NORMAL INVOICE , "383"  DEBIT_NOTE , "381" CREDIT_NOTE
             'issue_date'    =>Carbon::now()->format('Y-m-d'),
             'issue_time'    => Carbon::now()->format('H:i:s'),
@@ -140,21 +147,14 @@ class ZatcaService
             'xml' => 'xml', // this identifier for get invoice to update required fields ====> important
             'items' => $items
         ];
-
-
-
         $invoice_obj['client'] = [
-
-            'trn' => $invoice->client_id ? $invoice->client->client_tax_number : '',
-            'street_name' => $invoice->client_id ? $invoice->client->address_area : '',
-            "trn" => "",
-            "street_name" => "",
-
+            'trn' =>  '',
+            'street_name' => '',
             'building_number' => '',
             'plot_identification' => '',
             'city' => '',
             'postal_number' => '00000',
-            'name' => $invoice->client_id ? $invoice->client->client_name : '',
+            'name' => 'client',
             'country' => 'SA',
         ];
         return $invoice_obj;
@@ -162,7 +162,6 @@ class ZatcaService
 
     public function updateZatcaResponse($response, $invoice, $invoiceObject)
     {
-
         if ($response['success']) {
             $invoice->zatcaResult()->updateOrCreate(
                 ['invoice_id' => $invoice->id],

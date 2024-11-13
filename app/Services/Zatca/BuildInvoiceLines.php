@@ -20,7 +20,6 @@ class BuildInvoiceLines {
     public function __construct($invoice_obj){
         $this->invoice = $invoice_obj;
         foreach($this->invoice->items as $key=>$line){
-            // dd($line);
             $this->lines_discount_total +=$this->GenerateLineDiscountTotal($line);
             $this->GenerateLineDiscounts($line);
             $this->GenerateLineXml($line,$key);
@@ -99,7 +98,6 @@ class BuildInvoiceLines {
      *
      */
     public function GenerateExtenstionTaxesXml(){
-        // dd(9);
         foreach($this->getUniqueTaxCategories() as $key=>$unique_tax){
             $net_total = $unique_tax['tax_amount'] + $unique_tax['taxable_amount'];
             $this->lines_tax_total += $unique_tax['tax_amount'];
@@ -200,7 +198,7 @@ class BuildInvoiceLines {
      *
      */
     public function GenerateLineSubTotal($line){
-// dd($line->item);
+
         return ($line->qty * $line->sell_price) - $this->GenerateLineDiscountTotal($line);
     }
     /**
@@ -233,7 +231,6 @@ class BuildInvoiceLines {
         $discount_total = 0;
         foreach($line->discounts as $key=>$discount){
             //$discount_total += $discount->amount;
-            // dd($line->discounts);
             $discount_total += $discount->amount;
         }
         return $discount_total;

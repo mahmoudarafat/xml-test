@@ -15,7 +15,7 @@ class GenerateInvoiceHash {
      *
      */
     public function GenerateBinaryHash(){
-// dd($this->xml);
+
         return hash('sha256',$this->xml,true);
 
     }
@@ -36,7 +36,8 @@ class GenerateInvoiceHash {
 
     }
     /**
-     *
+     *X+zrZv/IbzjZUnhsbWlsecLbwjndTpG0ZynXOif7V+k=
+     *X+zrZv/IbzjZUnhsbWlsecLbwjndTpG0ZynXOif7V+k=
      * Generate Invoice Binary Hash Encoded in Base64 End .
      *
      */

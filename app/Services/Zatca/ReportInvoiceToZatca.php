@@ -28,7 +28,6 @@ class ReportInvoiceToZatca {
             $this->certificate = $this->company_setting->certificate;
             $this->secret = $this->company_setting->secret;
             $this->csid = $this->company_setting->csid;
-            // dd(3);
 
         }
 
@@ -41,12 +40,12 @@ class ReportInvoiceToZatca {
      */
     public function ReportInvoice(){
 
-        // return $this->invoice_builder->GenerateInvoiceHash();
         $post = [
             'invoiceHash' => $this->invoice_builder->GenerateInvoiceHash(),
             'uuid' => $this->invoice->uuid,
             'invoice' => $this->invoice_builder->GenerateInvoiceXmlEncoded(),
         ];
+
         $url = '';
         if($this->company_setting->is_production){
             if($this->invoice->document_type == 'simplified'){
@@ -58,9 +57,7 @@ class ReportInvoiceToZatca {
             $url = '/compliance/invoices';
         }
         $client = new \GuzzleHttp\Client();
-
         try{
-
             $request = $client->request('POST',ZatcaConfig::BaseUrl().$url,[
                 'json' => $post,
                 'headers' => [
@@ -96,10 +93,7 @@ class ReportInvoiceToZatca {
         catch(\Exception $e){
             $response = $e->getResponse();
             $response = $response->getBody()->getContents();
-            return $response ;
             $response_encode = json_decode($response);
-          return $response_encode;
-            dd($response , 587);
 
             return ['success' => false,'message' => $response_encode];
         }

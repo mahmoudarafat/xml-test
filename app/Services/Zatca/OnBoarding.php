@@ -3,8 +3,6 @@ namespace App\Services\Zatca;
 
 use App\Models\ZatcaSetting;
 use App\Services\Zatca\ZatcaConfig;
-use Illuminate\Support\Facades\DB;
-
 class OnBoarding {
 
     private $taxPayerConfig;
@@ -117,8 +115,8 @@ class OnBoarding {
             exit;
         }
 
-        $setting = DB::table('zatca_settings')->where('shop_id',132)->first();
-        $priv_key =$setting->private_key;
+
+
         // Generate Private Key and Store it start
         openssl_pkey_export($res, $priv_key , NULL, $config);
 
@@ -143,13 +141,11 @@ class OnBoarding {
         $dn = [
             "commonName" => $this->taxPayerConfig->common_name,
             "organizationalUnitName" => $this->taxPayerConfig->organization_unit_name,
-            "organizationName" => $this->taxPayerConfig->organization_name??"test",
-            "countryName" => 'SA'
+            "organizationName" => $this->taxPayerConfig->organization_name,
+            "countryName" => $this->taxPayerConfig->country_name
         ];
-        // dd($dn);
-        $priv_key =$setting->private_key;
+
         $csr = openssl_csr_new($dn, $priv_key, array('digest_alg' => 'sha256' ,"req_extensions" => "req_ext",'curve_name' => 'secp256k1',"config" => $tmpfile_path));
-// dd($csr);
 
         openssl_csr_export($csr,$csr_string);
 
@@ -160,6 +156,7 @@ class OnBoarding {
             'csr_request'=>base64_encode($csr_string)
         ]);
         fclose($temp); // this removes the file
+
         // return same object
         return $this;
     }
@@ -191,8 +188,7 @@ class OnBoarding {
 
         $url = ($type == 'production') ? '/production/csids' : '/compliance';
         $client = new \GuzzleHttp\Client();
-         try{
-
+        // try{
             $request = $client->request('POST',ZatcaConfig::BaseUrl().$url,[
                 'json' => $post,
                 'headers' => [
@@ -207,10 +203,7 @@ class OnBoarding {
                 ]
             ]);
 
-
-
             $response = $request->getBody()->getContents();
-            
             $response = json_decode($response);
             $certificate = ($type == 'compliance') ? 'certificate' : 'production_certificate';
             $secret = ($type == 'compliance') ? 'secret' : 'production_secret';
@@ -226,23 +219,23 @@ class OnBoarding {
             $data[$csid] = $response->requestID;
 
             return ['success' => true,'message' => $response->dispositionMessage , 'data' => $data];
-         }
-         catch(\Exception $e){
-             $response = $e->getResponse();
-             $response_source = $response->getBody()->getContents();
-             $response = json_decode($response_source);
-             if(isset($response->errors) && count($response->errors) > 0){
-                 return ['success' => false,'errors' => $response->errors];
-             }
-             elseif(isset($response->code) && $response->code == 'Invalid-OTP'){
-                 return ['success' => false,'errors' => [$response->message]];
-             }
-             elseif(isset($response->code) && $response->code == 'Missing-ComplianceSteps'){
-                 return ['success' => false,'errors' => [$response->message]];
-             }else{
-                 return ['success' => false,'errors' => [$response_source]];
-             }
-         }
+        // }
+        // catch(\Exception $e){
+        //     $response = $e->getResponse();
+        //     $response_source = $response->getBody()->getContents();
+        //     $response = json_decode($response_source);
+        //     if(isset($response->errors) && count($response->errors) > 0){
+        //         return ['success' => false,'errors' => $response->errors];
+        //     }
+        //     elseif(isset($response->code) && $response->code == 'Invalid-OTP'){
+        //         return ['success' => false,'errors' => [$response->message]];
+        //     }
+        //     elseif(isset($response->code) && $response->code == 'Missing-ComplianceSteps'){
+        //         return ['success' => false,'errors' => [$response->message]];
+        //     }else{
+        //         return ['success' => false,'errors' => [$response_source]];
+        //     }
+        // }
 
     }
     /**
