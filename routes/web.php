@@ -28,5 +28,7 @@ Route::group(['as' => 'zatca.', 'prefix' => 'zatca','namespace' => 'App\Http\Con
     Route::get('renew-certificate', 'ZatcaController@renewCertificate')->name('renew-certificate');
     Route::post('renew-certificate.store', 'ZatcaController@renewCertificateStore')->name('renew-certificate.store');
 
+
+
 });
 
